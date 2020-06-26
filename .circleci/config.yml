@@ -172,25 +172,25 @@ workflows:
           #       - master
           #   tags:
           #     ignore: /^v.*/
-      - deploy-to-k8s:
-          name: deploy-to-k8s-tag
-          cluster-name: eks_auger-cluster-prod2
-          aws-region: us-west-2
-          values-to-override: "image.tag=$CIRCLE_TAG"
-          context: eks
-          requires:
-            - docker-publish-tag
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - publish-pip:
-          requires:
-            - build-and-test
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-          context: pypi
+      # - deploy-to-k8s:
+      #     name: deploy-to-k8s-tag
+      #     cluster-name: eks_auger-cluster-prod2
+      #     aws-region: us-west-2
+      #     values-to-override: "image.tag=$CIRCLE_TAG"
+      #     context: eks
+      #     requires:
+      #       - docker-publish-tag
+      #     filters:
+      #       tags:
+      #         only: /^v.*/
+      #       branches:
+      #         ignore: /.*/
+      # - publish-pip:
+      #     requires:
+      #       - build-and-test
+      #     filters:
+      #       tags:
+      #         only: /^v.*/
+      #       branches:
+      #         ignore: /.*/
+      #     context: pypi
