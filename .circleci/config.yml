@@ -1,112 +1,20 @@
-version: 2.1
-
 orbs:
   docker: circleci/docker@1.0.1
   aws-eks: circleci/aws-eks@0.2.7
   kubernetes: circleci/kubernetes@0.11.0
   helm: circleci/helm@1.0.0
 
+version: 2
 jobs:
-  build-docs:
+  deploy-to-k8s-master:
     docker:
-      - image: circleci/python:3.7-stretch
+    - image: circleci/python:3
     steps:
-      - checkout
-      - run: sudo chown -R circleci:circleci /usr/local/bin
-      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.7/site-packages
-      - restore_cache:
-          keys:
-            - a2ml-python-doc-deps-v3-{{ arch }}-3.7-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "docs/requirements.txt" }}
-            - a2ml-python-doc-deps-v3-{{ arch }}-3.7-{{ .Branch }}
-            - a2ml-python-doc-deps-v3-{{ arch }}-3.7
-      - run:
-          name: Install dependencies
-          command: |
-            virtualenv venv
-            source venv/bin/activate
-            make develop-docs
-      - save_cache:
-          key: a2ml-python-doc-deps-v3-{{ arch }}-3.7-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "docs/requirements.txt" }}
-          paths:
-            - "venv"
-            - "/home/circleci/.cache/pip"
-      - run:
-          name: Build docs
-          command: |
-            source venv/bin/activate
-            cd docs/
-            make html
-      - persist_to_workspace:
-          root: docs/build
-          paths: html
-
-  publish-docs:
-    docker:
-      - image: node:10.15.0
-    steps:
-      - checkout
-      - attach_workspace:
-          at: docs/build
-      - add_ssh_keys:
-          fingerprints: "44:aa:23:95:60:12:6b:b5:8d:b2:e5:05:24:1f:94:cf"
-      - run:
-          name: Deploy docs to gh-pages branch
-          command: |
-            git config user.email "23641280+augerbot@users.noreply.github.com"
-            git config user.name "augerbot"
-            npm install -g --silent gh-pages@2.2.0
-            gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/build/html
-  build-and-test:
-    docker:
-      - image: circleci/python:3.7-stretch
-    steps:
-      - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run: make config docker-test
-
-  publish-pip:
-    docker:
-      - image: circleci/python:3.7-stretch
-    steps:
-      - checkout
-      - run:
-          command: |
-            echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
-      - run: make build
-      - run: make release
-
-  deploy-to-k8s:
-    executor: aws-eks/python3
-    parameters:
-      cluster-name:
-        description: |
-          Name of the EKS cluster
-        type: string
-      aws-region:
-        description: |
-          AWS region
-        type: string
-        default: "us-west-2"
-      values-to-override:
-        description: |
-          Values will be used as helm install --set "key1=value1,key2=value2"
-        type: string
-        default: ""
-    steps:
-      - run:
-          name: Check Values to override
-          command: |
-            echo $ROLE_ARN
-          # command: |
-          #   echo << parameters.aws-region >>
-          #   echo << parameters.cluster-name >>
-          #   echo << parameters.values-to-override >>
-          #   echo $ROLE_ARN
-          #   echo ${ROLE_ARN}
-      - run:
+    - run:
+        name: Check Values to override
+        command: |
+          echo $ROLE_ARN
+    - run:
         command: |
           if [[ latest == "latest" ]]; then
             # get latest kops release
@@ -254,94 +162,9 @@ jobs:
           fi
           aws eks update-kubeconfig "$@"
         name: Update the kubectl configuration file to use the authenticator
-      # - kubernetes/install
-      # - aws-eks/update-kubeconfig-with-authenticator:
-      #     cluster-name: << parameters.cluster-name >>
-      #     aws-region: << parameters.aws-region >>
-      #     cluster-authentication-role-arn: 'TEST'
-      #     install-kubectl: true
-      # - helm/install-helm-chart:
-      #     chart: augerai/a2ml
-      #     release-name: a2ml
-      #     namespace: a2ml
-      #     values-to-override: << parameters.values-to-override >>
-
 workflows:
   build-test-publish:
     jobs:
-      # - build-and-test:
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      # - build-docs
-      # - publish-docs:
-      #     requires:
-      #       - build-and-test
-      #       - build-docs
-      #     filters:
-      #       branches:
-      #         only:
-      #           - master
-      # - docker/publish:
-      #     cache_from: "augerai/a2ml:latest"
-      #     context: docker-hub
-      #     image: augerai/a2ml
-      #     name: docker-publish-tag
-      #     tag: $CIRCLE_TAG
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore: /.*/
-      # - docker/publish:
-      #     cache_from: "augerai/a2ml:latest"
-      #     context: docker-hub
-      #     image: augerai/a2ml
-      #     name: docker-publish-master
-      #     tag: latest
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       branches:
-      #         only:
-      #           - master
-      #       tags:
-      #         ignore: /^v.*/
-      - deploy-to-k8s:
-          name: deploy-to-k8s-master
-          cluster-name: eks_auger-cluster-staging1
-          aws-region: us-west-2
-          values-to-override: "image.tag=latest"
-          context: eks
-          # requires:
-          #   - docker-publish-master
-          # filters:
-          #   branches:
-          #     only:
-          #       - master
-          #   tags:
-          #     ignore: /^v.*/
-      # - deploy-to-k8s:
-      #     name: deploy-to-k8s-tag
-      #     cluster-name: eks_auger-cluster-prod2
-      #     aws-region: us-west-2
-      #     values-to-override: "image.tag=$CIRCLE_TAG"
-      #     context: eks
-      #     requires:
-      #       - docker-publish-tag
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore: /.*/
-      # - publish-pip:
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore: /.*/
-      #     context: pypi
+    - deploy-to-k8s-master:
+        context: eks
+  version: 2
