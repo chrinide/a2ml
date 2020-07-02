@@ -160,7 +160,7 @@ workflows:
       #         ignore: /^v.*/
       - deploy-to-k8s:
           name: deploy-to-k8s-master
-          cluster-name: eks_auger-cluster-staging1
+          cluster-name: auger-cluster-staging1
           aws-region: us-west-2
           values-to-override: "image.tag=latest"
           context: eks
