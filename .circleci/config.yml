@@ -41,7 +41,6 @@ jobs:
       - persist_to_workspace:
           root: docs/build
           paths: html
-
   publish-docs:
     docker:
       - image: node:10.15.0
