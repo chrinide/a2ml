@@ -99,21 +99,21 @@ jobs:
     steps:
       - aws-cli/setup
       - role/assume-role
-      # - kubernetes/install
       - aws-eks/update-kubeconfig-with-authenticator:
           cluster-name: << parameters.cluster-name >>
           aws-region: << parameters.aws-region >>
-          # cluster-authentication-role-arn: 'TEST'
           install-kubectl: true
-      - run:
-          command: |
-            kubectl get pods
-
-      # - helm/install-helm-chart:
-      #     chart: augerai/a2ml
-      #     release-name: a2ml
-      #     namespace: a2ml
-      #     values-to-override: << parameters.values-to-override >>
+      # - helm/install-helm-client:
+      #     version: v3.2.4
+      # - run:
+      #     command: |
+      #       kubectl get pods
+      - helm/install-helm-chart:
+          helm-version: v3.2.4
+          chart: augerai/a2ml
+          release-name: a2ml-ci
+          namespace: a2ml-ci
+          values-to-override: << parameters.values-to-override >>
 
 workflows:
   build-test-publish:
@@ -174,12 +174,14 @@ workflows:
           #     ignore: /^v.*/
       # - deploy-to-k8s:
       #     name: deploy-to-k8s-tag
-      #     cluster-name: eks_auger-cluster-prod2
+      #     cluster-name: eks_auger-cluster-stagin1
       #     aws-region: us-west-2
       #     values-to-override: "image.tag=$CIRCLE_TAG"
       #     context: eks
       #     requires:
+      #       - publish-docs
       #       - docker-publish-tag
+      #       - publish-pip
       #     filters:
       #       tags:
       #         only: /^v.*/
