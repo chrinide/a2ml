@@ -119,7 +119,7 @@ jobs:
       - run:
           command: |
             kubectl get namespace "<< parameters.namespace >>" >/dev/null 2>&1 || kubectl create namespace "<< parameters.namespace >>";
-      - helm/install-helm-chart:
+      - helm/upgrade-helm-chart:
           helm-version: v3.2.4
           chart: augerai/a2ml
           namespace: << parameters.namespace >>
