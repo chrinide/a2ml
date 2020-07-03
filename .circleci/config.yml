@@ -103,11 +103,11 @@ jobs:
           cluster-name: << parameters.cluster-name >>
           aws-region: << parameters.aws-region >>
           install-kubectl: true
-      # - helm/install-helm-client:
-      #     version: v3.2.4
-      # - run:
-      #     command: |
-      #       kubectl get pods
+      - helm/install-helm-client:
+          version: v3.2.4
+      - run:
+          command: |
+            helm repo update
       - helm/install-helm-chart:
           helm-version: v3.2.4
           chart: augerai/a2ml
