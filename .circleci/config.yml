@@ -101,7 +101,7 @@ jobs:
         description: |
           a2ml helm release-name
         type: string
-        default: "a2ml-${CIRCLE_SHA1}-${CIRCLE_BUILD_NUM}"
+        default: "a2ml-latest"
       values-to-override:
         description: |
           Values will be used as helm install --set "key1=value1,key2=value2"
@@ -177,7 +177,7 @@ workflows:
       - deploy-to-k8s:
           name: deploy-to-k8s-master
           values-to-override: "image.tag=latest"
-          release-name: "a2ml-${CIRCLE_SHA1}-${CIRCLE_BUILD_NUM}"
+          release-name: "a2ml-latest"
           namespace: a2ml-latest
           context: eks
           # requires:
@@ -191,7 +191,7 @@ workflows:
       # - deploy-to-k8s:
       #     name: deploy-to-k8s-tag
       #     namespace: a2ml-stable
-      #     release-name: "a2ml-${CIRCLE_TAG}-${CIRCLE_BUILD_NUM}"
+      #     release-name: "a2ml-stable"
       #     values-to-override: "image.tag=$CIRCLE_TAG"
       #     context: eks
       #     requires:
