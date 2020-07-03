@@ -136,81 +136,81 @@ jobs:
 workflows:
   build-test-publish:
     jobs:
-      # - build-and-test:
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      # - build-docs
-      # - publish-docs:
-      #     requires:
-      #       - build-and-test
-      #       - build-docs
-      #     filters:
-      #       branches:
-      #         only:
-      #           - master
-      # - docker/publish:
-      #     cache_from: "augerai/a2ml:latest"
-      #     context: docker-hub
-      #     image: augerai/a2ml
-      #     name: docker-publish-tag
-      #     tag: $CIRCLE_TAG
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore: /.*/
-      # - docker/publish:
-      #     cache_from: "augerai/a2ml:latest"
-      #     context: docker-hub
-      #     image: augerai/a2ml
-      #     name: docker-publish-master
-      #     tag: latest
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       branches:
-      #         only:
-      #           - master
-      #       tags:
-      #         ignore: /^v.*/
+      - build-and-test:
+          filters:
+            tags:
+              only: /^v.*/
+      - build-docs
+      - publish-docs:
+          requires:
+            - build-and-test
+            - build-docs
+          filters:
+            branches:
+              only:
+                - master
+      - docker/publish:
+          cache_from: "augerai/a2ml:latest"
+          context: docker-hub
+          image: augerai/a2ml
+          name: docker-publish-tag
+          tag: $CIRCLE_TAG
+          requires:
+            - build-and-test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - docker/publish:
+          cache_from: "augerai/a2ml:latest"
+          context: docker-hub
+          image: augerai/a2ml
+          name: docker-publish-master
+          tag: latest
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              ignore: /^v.*/
       - deploy-to-k8s:
           name: deploy-to-k8s-master
           values-to-override: "image.tag=latest"
           release-name: "a2ml-latest"
           namespace: a2ml-latest
           context: eks
-          # requires:
-          #   - docker-publish-master
+          requires:
+            - docker-publish-master
           # filters:
           #   branches:
           #     only:
           #       - master
           #   tags:
           #     ignore: /^v.*/
-      # - deploy-to-k8s:
-      #     name: deploy-to-k8s-tag
-      #     namespace: a2ml-stable
-      #     release-name: "a2ml-stable"
-      #     values-to-override: "image.tag=$CIRCLE_TAG"
-      #     context: eks
-      #     requires:
-      #       - publish-docs
-      #       - docker-publish-tag
-      #       - publish-pip
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore: /.*/
-      # - publish-pip:
-      #     requires:
-      #       - build-and-test
-      #     filters:
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore: /.*/
-      #     context: pypi
+      - deploy-to-k8s:
+          name: deploy-to-k8s-tag
+          namespace: a2ml-stable
+          release-name: "a2ml-stable"
+          values-to-override: "image.tag=$CIRCLE_TAG"
+          context: eks
+          requires:
+            - publish-docs
+            - docker-publish-tag
+            - publish-pip
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish-pip:
+          requires:
+            - build-and-test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+          context: pypi
