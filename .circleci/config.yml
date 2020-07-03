@@ -182,8 +182,8 @@ workflows:
           release-name: "a2ml-latest"
           namespace: a2ml-latest
           context: eks
-          requires:
-            - docker-publish-master
+          # requires:
+          #   - docker-publish-master
           # filters:
           #   branches:
           #     only:
