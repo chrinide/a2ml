@@ -116,6 +116,9 @@ jobs:
             helm repo add augerai https://raw.githubusercontent.com/augerai/charts/master
             helm repo update
             helm repo list
+      - run:
+          command: |
+            kubectl get namespace "<< parameters.namespace >>" >/dev/null 2>&1 || kubectl create namespace "<< parameters.namespace >>";
       - helm/install-helm-chart:
           helm-version: v3.2.4
           chart: augerai/a2ml
