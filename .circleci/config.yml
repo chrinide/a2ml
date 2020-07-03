@@ -182,14 +182,14 @@ workflows:
           release-name: "a2ml-latest"
           namespace: a2ml-latest
           context: eks
-          # requires:
-          #   - docker-publish-master
-          # filters:
-          #   branches:
-          #     only:
-          #       - master
-          #   tags:
-          #     ignore: /^v.*/
+          requires:
+            - docker-publish-master
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              ignore: /^v.*/
       - deploy-to-k8s:
           name: deploy-to-k8s-tag
           namespace: a2ml-stable
