@@ -14,10 +14,14 @@ from unittest.mock import ANY
 # Revert credentials change back in base_test.build_context after recording
 
 class TestTasksApiAuger(BaseTest):
-    def assert_result(self, res, expected_result, expected_data):
+    def assert_result(self, res, expected_result, expected_data, no_provider_in_result=False):
         assert isinstance(res, dict)
 
-        response = res['response']['auger']
+        if no_provider_in_result:
+            response = res['response']
+        else:
+            response = res['response']['auger']
+
         assert response['result'] == expected_result, response['data']
         assert response['data'] == expected_data
 
@@ -43,13 +47,15 @@ class TestTasksApiAuger(BaseTest):
     def test_evaluate_valid(self):
         params = self.params('auger', '29654979bf8a1877')
         res = evaluate_task.apply(params).result
-        self.assert_result(res, True, {'leaderboard': ANY, 'run_id': '29654979bf8a1877', 'status': 'completed'})
+        self.assert_result(res, True, 
+            {'leaderboard': ANY, 'run_id': '29654979bf8a1877', 
+            'status': 'completed', 'provider_status': 'completed'})
 
     @vcr.use_cassette('auger/deploy/valid.yaml')
     def test_deploy_valid(self):
         params = self.params('auger', '390955D2AB984D7')
         res = deploy_task.apply(params).result
-        self.assert_result(res, True, {'model_id': '390955D2AB984D7'})
+        self.assert_result(res, True, {'model_id': '390955D2AB984D7'}, no_provider_in_result=True)
 
     @vcr.use_cassette('auger/project/list_valid.yaml')
     def test_project_list_valid(self):
@@ -85,7 +91,8 @@ class TestTasksApiAuger(BaseTest):
     def test_experiment_leaderboard_valid(self):
         params = self.params('auger', 'a6bc4bdb6607e7c2')
         res = leaderboard_experiment_task.apply(params).result
-        self.assert_result(res, True, {'leaderboard': ANY, 'run_id': 'a6bc4bdb6607e7c2', 'status': 'completed'})
+        self.assert_result(res, True, {'leaderboard': ANY, 'run_id': 'a6bc4bdb6607e7c2', 
+            'status': 'completed', 'provider_status': 'completed'})
 
     @vcr.use_cassette('auger/experiment/list_valid.yaml')
     def test_experiment_list_valid(self):
@@ -95,9 +102,6 @@ class TestTasksApiAuger(BaseTest):
 
     @vcr.use_cassette('auger/predict/valid.yaml')
     def test_predict_success(self):
-        review_bucket = self.review_bucket()
-        self.clear_bucket(review_bucket)
-
         params = self.params(
             'auger',
             's3://sample-bucket/workspace/projects/a2ml-app/files/iris_for_predict.csv',
@@ -107,22 +111,10 @@ class TestTasksApiAuger(BaseTest):
         )
 
         res = predict_model_task.apply(params).result
-        self.assert_result(res, True, {'predicted': ANY})
-
-        files = self.list_s3_files(review_bucket)
-        assert isinstance(files, list)
-        assert len(files) == 1
-
-        assert re.match(
-            '\/auger\/models\/555777999\/predictions\/\d{4}-\d{2}-\d{2}_[0-9a-f\-]+_results.pkl.gz',
-            files[0]
-        )
+        self.assert_result(res, True, {'predicted': ANY}, no_provider_in_result=True)
 
     @vcr.use_cassette('auger/predict/invalid_model.yaml')
     def test_predict_failure_model_status(self):
-        review_bucket = self.review_bucket()
-        self.clear_bucket(review_bucket)
-
         params = self.params(
             'auger',
             's3://sample-bucket/workspace/projects/a2ml-app/files/iris_for_predict.csv',
@@ -132,5 +124,5 @@ class TestTasksApiAuger(BaseTest):
         )
 
         res = predict_model_task.apply(params).result
-        self.assert_result(res, False, 'Pipeline 000111222 is not ready...')
+        self.assert_result(res, False, 'Pipeline 000111222 is not ready...', no_provider_in_result=True)
 

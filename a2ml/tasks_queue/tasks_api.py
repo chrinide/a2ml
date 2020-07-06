@@ -13,7 +13,6 @@ from a2ml.api.a2ml_experiment import A2MLExperiment
 from a2ml.api.a2ml_model import A2MLModel
 from a2ml.api.a2ml_project import A2MLProject
 from a2ml.server.notification import SyncSender
-from a2ml.tasks_queue.review import store_predictions
 
 notificator = SyncSender()
 
@@ -157,24 +156,30 @@ def stop_experiment_task(params):
 
 # Models
 @celeryApp.task(after_return=__handle_task_result)
-def actual_model_task(params):
+def actuals_model_task(params):
     return with_context(
         params,
-        lambda ctx: A2MLModel(ctx, None).actual(*params['args'], **params['kwargs'])
+        lambda ctx: A2MLModel(ctx).actuals(*params['args'], **params['kwargs'])
+    )
+
+@celeryApp.task(after_return=__handle_task_result)
+def actuals_task(params):
+    return with_context(
+        params,
+        lambda ctx: A2ML(ctx).actuals(*params['args'], **params['kwargs'])
     )
 
 @celeryApp.task(after_return=__handle_task_result)
 def deploy_model_task(params):
     return with_context(
         params,
-        lambda ctx: A2MLModel(ctx, None).deploy(*params['args'], **params['kwargs'])
+        lambda ctx: A2MLModel(ctx).deploy(*params['args'], **params['kwargs'])
     )
 
 @celeryApp.task(after_return=__handle_task_result)
 def predict_model_task(params):
     def _predict(ctx):
-        res = A2MLModel(ctx, None).predict(*params['args'], **params['kwargs'])
-        return store_predictions(res, model_id=params['args'][1])
+        return A2MLModel(ctx).predict(*params['args'], **params['kwargs'])
 
     return with_context(params, _predict)
 
@@ -271,7 +276,7 @@ def __map_collection_to_name(res, collection_name):
             res[provder]['data'][collection_name] = list(
                 map(lambda x: __map_to_name(x), res[provder]['data'][collection_name])
             )
-
+                    
     return res
 
 def __map_to_name(obj):

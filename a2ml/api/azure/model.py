@@ -210,14 +210,15 @@ def get_df(data):
 
     @error_handler
     @authenticated
-    def actual(self, filename, model_id, locally):
+    def actuals(self, model_id, filename=None, actual_records=None, locally=False):
         if locally:
             model_path = self.ctx.config.get_model_path(model_id)
 
             if not fsclient.is_folder_exists(model_path):
                 raise Exception('Model should be deployed first.')
 
-            return ModelReview({'model_path': model_path}).process_actuals(actuals_path=filename)
+            return ModelReview({'model_path': model_path}).add_actuals(
+                actuals_path=filename, actual_records=actual_records)
         else:    
             raise Exception("Not Implemented")
 
